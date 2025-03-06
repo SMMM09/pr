@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block title %}تأیید حساب{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>تأیید حساب</h1>
+    <p>کد تأیید به شماره تلفن {{ phone }} ارسال شد.</p>
+    <form action="/verify/{{ phone }}" method="POST">
+        <label for="code">کد تأیید:</label>
+        <input type="text" name="code" id="code" required>
+        <input type="submit" value="تأیید">
+    </form>
+</div>
+{% endblock %}

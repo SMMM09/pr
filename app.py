@@ -67,10 +67,23 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 def send_sms_kavenegar(phone, code, api_key):
+#    try:
+#        api = KavenegarAPI(api_key)
+#        params = {
+#            'sender': '2000660110',
+#            'receptor': phone,
+#            'message': f'کد تأیید شما: {code}'
+#        }
+#        response = api.sms_send(params)
+#        print('پیامک با موفقیت ارسال شد.')
+#    except APIException as e:
+#        print(f'خطا در ارسال پیامک: {e}')
+#    except HTTPException as e:
+#        print(f'خطا در ارسال پیامک: {e}')
     print(f'CODE: {code}')
 
 def send_verification_code(phone, code):
-    api_key = 'your_api_key'
+    api_key = '5741334F334A7445695736326A503755536F35437845564D46335356653047356C5A634C4D2B72544E6E453D'
     send_sms_kavenegar(phone, code, api_key)
 
 def create_default_categories():
@@ -324,24 +337,22 @@ def register():
 
 @app.route('/verify/<phone>', methods=['GET', 'POST'])
 def verify(phone):
-   user = User.query.filter_by(phone=phone).first()
+    user = User.query.filter_by(phone=phone).first()
 
-   if not user:
+    if not user:
        flash('کاربر یافت نشد.', 'error')
        return redirect(url_for('register'))
+    if request.method == 'POST':
+        entered_code = request.form['code']
+        if entered_code == user.verification_code:
+            user.verified = True
+            db.session.commit()
+            flash('حساب شما با موفقیت تأیید شد.', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('کد تأیید وارد شده صحیح نیست.', 'error')
 
-   if request.method == 'POST':
-       verification_code = request.form['verification_code']
-       if user.verification_code == verification_code:
-           user.verified = True
-           db.session.commit()
-           flash('حساب شما با موفقیت تایید شد.', 'success')
-           login_user(user)
-           return redirect(url_for('dashboard'))
-       else:
-           flash('کد تأیید اشتباه است.', 'error')
-
-   return render_template('verify.html', phone=phone)
+    return render_template('verify.html', phone=phone)
 
 @app.route('/logout')
 @login_required
