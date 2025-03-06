@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block title %}بروزرسانی دسته بندی{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>بروزرسانی دسته بندی</h1>
+
+    <form action="/update_category/{{ category.id }}" method="POST">
+        <label for="name">نام دسته بندی:</label>
+        <input type="text" name="name" id="name" value="{{ category.name }}" required>
+        <input type="submit" value="بروزرسانی دسته بندی">
+    </form>
+</div>
+{% endblock %}

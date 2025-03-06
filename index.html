@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+{% block title %}صفحه اصلی{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>به مدیریت وظایف پومودورو خوش آمدید!</h1>
+    {% if logged_in %}
+    <p>شما وارد شده‌اید. به <a href="{{ url_for('dashboard') }}">داشبورد</a> خود بروید.</p>
+    {% else %}
+    <p>برای استفاده از این برنامه، <a href="{{ url_for('register') }}">ثبت نام</a> کنید یا <a href="{{ url_for('login') }}">وارد</a> شوید.</p>
+    {% endif %}
+</div>
+{% endblock %}

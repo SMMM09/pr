@@ -1,0 +1,404 @@
+{% extends 'layout.html' %}
+
+{% block title %}داشبورد{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>داشبورد</h1>
+
+    <form action="/dashboard" method="POST">
+        <label for="content">عنوان وظیفه:</label>
+        <input type="text" name="content" id="content" placeholder="وظیفه جدید را اضافه کنید" required>
+        <label for="pomodoro_time">زمان پومودورو (دقیقه):</label>
+        <input type="number" name="pomodoro_time" id="pomodoro_time" placeholder="زمان پومودورو (دقیقه)" value="25" required>
+        <label for="category_id">دسته بندی:</label>
+        <select name="category_id">
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="اضافه کردن وظیفه">
+    </form>
+
+    <div id="task-manager">
+        <div id="timer-box">
+            <div id="timer-display">
+                <span id="minutes">00</span>:<span id="seconds">00</span>
+            </div>
+            <button id="toggle-tasks" class="timer-button">شروع وظایف</button>
+        </div>
+
+        <table id="stats-table">
+            <tr>
+                <th>تعداد کل وظایف</th>
+                <th>تعداد وظایف انجام شده</th>
+                <th>نرخ تکمیل</th>
+            </tr>
+            <tr>
+                <td>{{ stats.total_tasks }}</td>
+                <td>{{ stats.completed_count }}</td>
+                <td>{{ stats.completion_rate }}%</td>
+            </tr>
+        </table>
+    </div>
+
+    <table id="tasks-table">
+        <thead>
+        <tr>
+            <th>وضعیت</th>
+            <th>وظیفه</th>
+            <th>زمان پومودورو</th>
+            <th>دسته بندی</th>
+            <th>اقدامات</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for task in tasks %}
+        <tr data-id="{{ task.id }}" {% if task.completed %}class="completed"{% endif %}>
+            <td>
+                <input type="checkbox" class="complete-checkbox" data-id="{{ task.id }}" {% if task.completed %}checked{% endif %}>
+            </td>
+            <td>
+                <label class="task-label">
+                    <span>{{ task.content }}</span>
+                </label>
+            </td>
+            <td>{{ task.pomodoro_time }}</td>
+            <td>{{ categories[task.category_id - 1].name }}</td>
+            <td>
+                <a href="/delete/{{ task.id }}" class="delete-link" {% if task.completed %}disabled{% endif %}>حذف</a>
+                <a href="/update/{{ task.id }}" class="update-link" {% if task.completed %}disabled{% endif %}>بروزرسانی</a>
+            </td>
+            <td class="drag-handle">&#8801;</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('categories') }}">مدیریت دسته بندی ها</a>
+
+    <div id="task-popup" class="popup">
+        <div class="popup-content">
+            <p id="popup-message"></p>
+            <div id="popup-options">
+                <button id="task-done" class="popup-button">انجام شد - رفتن به استراحت</button>
+                <button id="task-delay" class="popup-button">تاخیر در انجام وظیفه</button>
+                <button id="next-task" class="popup-button">رفتن به وظیفه بعد</button>
+                <button id="close-popup" class="popup-button">بستن</button>
+            </div>
+            <div id="rest-options" class="popup-options" style="display: none;">
+                <button class="rest-time popup-button" data-time="5">5 دقیقه استراحت</button>
+                <button class="rest-time popup-button" data-time="10">10 دقیقه استراحت</button>
+                <button class="rest-time popup-button" data-time="15">15 دقیقه استراحت</button>
+            </div>
+            <div id="delay-options" class="popup-options" style="display: none;">
+                <button class="delay-time popup-button" data-time="10">10 دقیقه تاخیر</button>
+                <button class="delay-time popup-button" data-time="20">20 دقیقه تاخیر</button>
+                <button class="delay-time popup-button" data-time="30">30 دقیقه تاخیر</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rest-popup" class="popup">
+        <div class="popup-content">
+            <p>لطفا زمان استراحت را انتخاب کنید:</p>
+            <div id="rest-options-popup" class="popup-options">
+                <button class="rest-time popup-button" data-time="5">5 دقیقه استراحت</button>
+                <button class="rest-time popup-button" data-time="10">10 دقیقه استراحت</button>
+                <button class="rest-time popup-button" data-time="15">15 دقیقه استراحت</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delay-popup" class="popup">
+        <div class="popup-content">
+            <p>لطفا زمان تاخیر را انتخاب کنید:</p>
+            <div id="delay-options-popup" class="popup-options">
+                <button class="delay-time popup-button" data-time="10">10 دقیقه تاخیر</button>
+                <button class="delay-time popup-button" data-time="20">20 دقیقه تاخیر</button>
+                <button class="delay-time popup-button" data-time="30">30 دقیقه تاخیر</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+<script>
+    // ... (کدهای تایمر)
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... (بقیه کدها)
+        let isTimerRunning = false;
+
+        const startTasksButton = document.getElementById('toggle-tasks');
+        const minutesDisplay = document.getElementById('minutes');
+        const secondsDisplay = document.getElementById('seconds');
+        let timerInterval;
+        let currentTaskIndex = 0;
+        let tasks = {{ tasks|tojson }};
+        const taskPopup = document.getElementById('task-popup');
+        const popupMessage = document.getElementById('popup-message');
+        const popupOptions = document.getElementById('popup-options');
+        const restOptions = document.getElementById('rest-options');
+        const delayOptions = document.getElementById('delay-options');
+        const restPopup = document.getElementById('rest-popup');
+        const delayPopup = document.getElementById('delay-popup');
+
+        function showPopup(message) {
+            popupMessage.textContent = message;
+            taskPopup.style.display = 'block';
+        }
+
+        function hidePopup() {
+            taskPopup.style.display = 'none';
+            restOptions.style.display = 'none';
+            delayOptions.style.display = 'none';
+        }
+
+        function showRestPopup() {
+            restPopup.style.display = 'block';
+        }
+
+        function hideRestPopup() {
+            restPopup.style.display = 'none';
+        }
+
+        function showDelayPopup() {
+            delayPopup.style.display = 'block';
+        }
+
+        function hideDelayPopup() {
+            delayPopup.style.display = 'none';
+        }
+
+        function startTimer(task) {
+            let minutes = task.pomodoro_time;
+            let seconds = 0;
+
+            function updateDisplay() {
+                minutesDisplay.textContent = minutes < 10 ? '0' + minutes : minutes;
+                secondsDisplay.textContent = seconds < 10 ? '0' + seconds : seconds;
+            }
+
+            updateDisplay();
+
+            timerInterval = setInterval(() => {
+                if (seconds === 0) {
+                    if (minutes === 0) {
+                        clearInterval(timerInterval);
+                        showPopup('زمان انجام وظیفه به پایان رسید! آیا وظیفه را انجام دادید؟');
+                        return;
+                    }
+                    minutes--;
+                    seconds = 59;
+                } else {
+                    seconds--;
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        function startNextTask() {
+            currentTaskIndex++;
+            if (currentTaskIndex < tasks.length) {
+                startTimer(tasks[currentTaskIndex]);
+            } else {
+                showPopup('تبریک! تمام وظایف انجام شدند.');
+            }
+        }
+
+        function startRest(time) {
+            let minutes = time;
+            let seconds = 0;
+
+            function updateDisplay() {
+                minutesDisplay.textContent = minutes < 10 ? '0' + minutes : minutes;
+                secondsDisplay.textContent = seconds < 10 ? '0' + seconds : seconds;
+            }
+
+            updateDisplay();
+
+            timerInterval = setInterval(() => {
+                if (seconds === 0) {
+                    if (minutes === 0) {
+                        clearInterval(timerInterval);
+                        startNextTask();
+                        return;
+                    }
+                    minutes--;
+                    seconds = 59;
+                } else {
+                    seconds--;
+                }
+                updateDisplay();}, 1000);
+        }
+
+        function startDelay(time) {
+            let minutes = time;
+            let seconds = 0;
+
+            function updateDisplay() {
+                minutesDisplay.textContent = minutes < 10 ? '0' + minutes : minutes;
+                secondsDisplay.textContent = seconds < 10 ? '0' + seconds : seconds;
+            }
+
+            updateDisplay();
+
+            timerInterval = setInterval(() => {
+                if (seconds === 0) {
+                    if (minutes === 0) {
+                        clearInterval(timerInterval);
+                        showPopup('زمان تاخیر به پایان رسید! آیا وظیفه را انجام دادید؟');
+                        return;
+                    }
+                    minutes--;
+                    seconds = 59;
+                } else {
+                    seconds--;
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        startTasksButton.addEventListener('click', function()
+        {
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                startTasksButton.textContent = 'شروع وظایف';
+                isTimerRunning = false;
+            } else {
+                if (tasks.length > 0) {
+                    startTimer(tasks[currentTaskIndex]);
+                    startTasksButton.textContent = 'توقف وظایف';
+                    isTimerRunning = true;
+                }
+            }
+
+            // به روز رسانی لیست وظایف پس از شروع یا توقف تایمر
+            fetch('/dashboard')
+                .then(response => response.text())
+                .then(html => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const newTasksTable = tempDiv.querySelector('#tasks-table tbody');
+                    document.querySelector('#tasks-table tbody').innerHTML = newTasksTable.innerHTML;
+                    tasks = {{ tasks|tojson }}; // به روز رسانی آرایه tasks
+                    updateStats(); // به روز رسانی آمار
+                    setupCompleteCheckboxes(); // تنظیم مجدد چک باکس ها
+                });
+        });
+
+        document.getElementById('task-done').addEventListener('click', function() {
+            hidePopup();
+            showRestPopup();
+        });
+
+        document.getElementById('task-delay').addEventListener('click', function() {
+            hidePopup();
+            showDelayPopup();
+        });
+
+        document.getElementById('next-task').addEventListener('click', function() {
+            hidePopup();
+            startNextTask();
+        });
+
+        document.getElementById('close-popup').addEventListener('click', function() {
+            hidePopup();
+        });
+
+        document.querySelectorAll('.rest-time').forEach(button => {
+            button.addEventListener('click', function() {
+                const time = parseInt(this.getAttribute('data-time'));
+                hideRestPopup();
+                startRest(time);
+            });
+        });
+
+        document.querySelectorAll('.delay-time').forEach(button => {
+            button.addEventListener('click', function() {
+                const time = parseInt(this.getAttribute('data-time'));
+                hideDelayPopup();
+                startDelay(time);
+            });
+        });
+
+        // نمایش پاپ‌آپ در انتهای زمان تسک
+        function showTaskCompletionPopup() {
+            showPopup('زمان انجام وظیفه به پایان رسید! آیا وظیفه را انجام دادید؟');
+        }
+
+        // اصلاح تابع startTimer
+        function startTimer(task) {
+            let minutes = task.pomodoro_time;
+            let seconds = 0;
+
+            function updateDisplay() {
+                minutesDisplay.textContent = minutes < 10 ? '0' + minutes : minutes;
+                secondsDisplay.textContent = seconds < 10 ? '0' + seconds : seconds;
+            }
+
+            updateDisplay();
+
+            timerInterval = setInterval(() => {
+                if (seconds === 0) {
+                    if (minutes === 0) {
+                        clearInterval(timerInterval);
+                        showTaskCompletionPopup(); // نمایش پاپ‌آپ
+                        return;
+                    }
+                    minutes--;
+                    seconds = 59;
+                } else {
+                    seconds--;
+                }
+                updateDisplay();
+            }, 1000);
+        }
+
+        // اصلاح سیستم تیک زدن کارها
+        function setupCompleteCheckboxes() {
+            const completeCheckboxes = document.querySelectorAll('.complete-checkbox');
+            completeCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const taskId = this.getAttribute('data-id');
+                    const isChecked = this.checked;
+                    fetch(`/complete/${taskId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ completed: isChecked })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (isChecked) {
+                                this.closest('tr').classList.add('completed');
+                                this.closest('tr').querySelectorAll('a').forEach(link => link.setAttribute('disabled', 'disabled'));
+                                this.closest('tbody').appendChild(this.closest('tr'));
+                            } else {
+                                this.closest('tr').classList.remove('completed');
+                                this.closest('tr').querySelectorAll('a').forEach(link => link.removeAttribute('disabled'));
+                            }
+                            updateStats(); // به روز رسانی آمار
+                        });
+                });
+            });
+        }
+
+        setupCompleteCheckboxes(); // اجرای اولیه چک باکس ها
+
+        // به روز رسانی آمار
+        function updateStats() {
+            fetch('/dashboard')
+                .then(response => response.text())
+                .then(html => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const newStatsTable = tempDiv.querySelector('#stats-table tbody');
+                    document.querySelector('#stats-table tbody').innerHTML = newStatsTable.innerHTML;
+                });
+        }
+    });
+</script>
+{% endblock %}

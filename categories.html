@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+
+{% block title %}مدیریت دسته بندی ها{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>مدیریت دسته بندی ها</h1>
+
+    <form action="/categories" method="POST">
+        <label for="name">نام دسته بندی:</label>
+        <input type="text" name="name" id="name" placeholder="نام دسته بندی جدید" required>
+        <input type="submit" value="اضافه کردن دسته بندی">
+    </form>
+
+    <table id="categories-table">
+        <thead>
+        <tr>
+            <th>نام دسته بندی</th>
+            <th>اقدامات</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for category in categories %}
+        <tr>
+            <td>{{ category.name }}</td>
+            <td>
+                <a href="/delete_category/{{ category.id }}" class="delete-link">حذف</a>
+                <a href="/update_category/{{ category.id }}" class="update-link">بروزرسانی</a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

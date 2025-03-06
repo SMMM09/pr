@@ -1,0 +1,23 @@
+{% extends 'layout.html' %}
+
+{% block title %}بروزرسانی وظیفه{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>بروزرسانی وظیفه</h1>
+
+    <form action="/update/{{ task.id }}" method="POST">
+        <label for="content">عنوان وظیفه:</label>
+        <input type="text" name="content" id="content" value="{{ task.content }}" required>
+        <label for="pomodoro_time">زمان پومودورو (دقیقه):</label>
+        <input type="number" name="pomodoro_time" id="pomodoro_time" value="{{ task.pomodoro_time }}" required>
+        <label for="category_id">دسته بندی:</label>
+        <select name="category_id">
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if category.id == task.category_id %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="بروزرسانی وظیفه">
+    </form>
+</div>
+{% endblock %}

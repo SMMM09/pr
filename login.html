@@ -1,0 +1,17 @@
+{% extends 'layout.html' %}
+
+{% block title %}ورود{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>ورود</h1>
+    <form action="/login" method="POST">
+        <label for="username">نام کاربری:</label>
+        <input type="text" name="username" id="username" required>
+        <label for="password">رمز عبور:</label>
+        <input type="password" name="password" id="password" required>
+        <input type="submit" value="ورود">
+    </form>
+    <p>هنوز ثبت نام نکرده‌اید؟ <a href="{{ url_for('register') }}">ثبت نام</a></p>
+</div>
+{% endblock %}

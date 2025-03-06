@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+
+{% block title %}ثبت نام{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>ثبت نام</h1>
+    {% if errors %}
+    <ul class="errors">
+        {% for field, message in errors.items() %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <form action="/register" method="POST">
+        <label for="username">نام کاربری:</label>
+        <input type="text" name="username" id="username" required>
+        <label for="phone">شماره تلفن:</label>
+        <input type="tel" name="phone" id="phone" required>
+        <label for="password">رمز عبور:</label>
+        <input type="password" name="password" id="password" required>
+        <input type="submit" value="ثبت نام">
+    </form>
+    <p>قبلاً ثبت نام کرده‌اید؟ <a href="{{ url_for('login') }}">وارد شوید</a></p>
+</div>
+{% endblock %}
